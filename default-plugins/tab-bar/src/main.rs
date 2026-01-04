@@ -32,6 +32,8 @@ struct State {
     mode_info: ModeInfo,
     tab_line: Vec<LinePart>,
     hide_swap_layout_indication: bool,
+    show_tab_index: bool,
+    tab_index_offset: i32,
 }
 
 static ARROW_SEPARATOR: &str = "";
@@ -44,6 +46,14 @@ impl ZellijPlugin for State {
             .get("hide_swap_layout_indication")
             .map(|s| s == "true")
             .unwrap_or(false);
+        self.show_tab_index = configuration
+            .get("show_tab_index")
+            .map(|s| s == "true")
+            .unwrap_or(false);
+        self.tab_index_offset = configuration
+            .get("tab_index_offset")
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
         set_selectable(false);
         subscribe(&[
             EventType::TabUpdate,
@@ -118,6 +128,11 @@ impl ZellijPlugin for State {
                 active_tab_index = t.position;
             } else if t.active {
                 active_tab_index = t.position;
+            }
+            if self.show_tab_index {
+                // position is 0-indexed, add 1 for 1-indexed display, then apply offset
+                let display_index = (t.position + 1) as i32 + self.tab_index_offset;
+                tabname = format!("{}: {}", display_index, tabname);
             }
             let tab = tab_style(
                 tabname,
