@@ -52,6 +52,8 @@ struct State {
     config: BTreeMap<String, String>,
     own_plugin_id: Option<u32>,
     toggle_tooltip_key: Option<String>,
+    show_tab_index: bool,
+    tab_index_offset: i32,
 
     // Tooltip state
     is_tooltip: bool,
@@ -130,6 +132,11 @@ impl State {
     fn initialize_configuration(&mut self, configuration: BTreeMap<String, String>) {
         self.config = configuration.clone();
         self.is_tooltip = self.parse_bool_config(CONFIG_IS_TOOLTIP, false);
+        self.show_tab_index = self.parse_bool_config("show_tab_index", false);
+        self.tab_index_offset = configuration
+            .get("tab_index_offset")
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0);
 
         if !self.is_tooltip {
             if let Some(tooltip_toggle_key) = configuration.get(CONFIG_TOGGLE_TOOLTIP_KEY) {
@@ -549,6 +556,10 @@ impl State {
         let mut tab_name = tab.name.clone();
         if tab.active && self.mode_info.mode == InputMode::RenameTab && tab_name.is_empty() {
             tab_name = "Enter name...".to_string();
+        }
+        if self.show_tab_index {
+            let display_index = (tab.position + 1) as i32 + self.tab_index_offset;
+            tab_name = format!("{}: {}", display_index, tab_name);
         }
         tab_name
     }
